@@ -20,5 +20,6 @@ llama-index-readers-llama-parse
 llama-parse
 llamaindex-py-client
 openai
+plotly
 python-dotenv
 streamlit==1.35.0

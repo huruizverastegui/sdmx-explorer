@@ -1,8 +1,45 @@
 import streamlit as st
 import pandas as pd
 import requests
+import io
 from io import StringIO
 import plotly.express as px
+from azure.storage.blob import BlobServiceClient
+import os 
+import dotenv
+from dotenv import load_dotenv
+
+
+# extract the MAPPING FILE - ONLY ONCE
+
+load_dotenv()
+# Replace these with your actual connection details
+connection_string =  os.environ["CONNECTION_STRING_BLOB"]
+container_name =os.environ["CONTAINER_NAME"]
+blob_name = os.environ["MAPPING_FILE_NAME"]
+
+@st.cache_data
+def load_mapping_csv(connection_string, container_name, blob_name):
+    """
+    Downloads the CSV from Azure Blob Storage and returns a DataFrame.
+    This function is cached, so subsequent calls with the same parameters will
+    return the cached DataFrame instead of re-downloading the file.
+    """
+    # Create the BlobServiceClient to interact with the Blob service
+    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+    
+    # Get a client for the specific container and blob
+    container_client = blob_service_client.get_container_client(container_name)
+    blob_client = container_client.get_blob_client(blob_name)
+    
+    # Download the blob's contents as text
+    download_stream = blob_client.download_blob()
+    csv_text = download_stream.content_as_text()
+    
+    # Load the CSV text into a DataFrame and return it
+    return pd.read_csv(io.StringIO(csv_text))
+#########################
+
 
 st.set_page_config(page_title="UNICEF SDMX API Data Explorer", layout="wide")
 
@@ -12,7 +49,7 @@ st.title("UNICEF SDMX API Data Explorer")
 # Expected columns include: 'dataflow_name', 'agency', 'dataflow_id', 'geography', 'geography_id',
 # 'indicator', 'indicator_id', 'category', and (optionally) 'Country'
 try:
-    df_mapping = pd.read_csv("mapping_sdmx_2025_03_20_country_category_cleaned.csv")
+    df_mapping = load_mapping_csv(connection_string, container_name, blob_name)
 except Exception as e:
     st.error("Error loading CSV file: " + str(e))
     st.stop()

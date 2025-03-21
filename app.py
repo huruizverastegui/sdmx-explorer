@@ -162,6 +162,7 @@ if st.button("Fetch Data"):
             
             if national_option == "Subnational":
                 geo_ids = ""
+                geos = df_flow[df_flow["country"].isin(selected_geographies)]["geography"].unique().tolist()
 
             indicator_ids = df_flow[df_flow["indicator"].isin(selected_indicators)]["indicator_id"].unique().tolist()
             geography_id_str = "+".join(geo_ids)
@@ -240,26 +241,33 @@ if st.button("Fetch Data"):
 if "flow_data" in st.session_state:
     st.subheader("Fetched Data by Dataflow")
     for flow, df_data in st.session_state["flow_data"].items():
+
+        # st.text(df_data.columns)
         # ---- Standardize Geographical Area Column Names ----
         # Rename any column found in synonyms to "Geographical area"
         rename_dict = {}
-        synonyms = ["Country", "Geographic area", "Geo area", "Reference Areas","Areas"]
+        synonyms = ["Country", "Geographic area", "Geo area", "Reference Areas","Areas",'REGION','Reference Area']
         for col in synonyms:
             if col in df_data.columns and col != "Geographical area":
                 rename_dict[col] = "Geographical area"
         if rename_dict:
             df_data.rename(columns=rename_dict, inplace=True)
-    
+
+        # st.text(df_data.columns)
 
     for flow, df_data in st.session_state["flow_data"].items():
         # Rename any column found in synonyms to "Indicator"
+        # st.text(df_data.columns)
+
         rename_dict = {}
-        synonyms = ["Coverage Indicators","Coverage indicators"]
+        synonyms = ["Coverage Indicators","Coverage indicators",'Demographic indicators','Driver indicators','Tier 2 indicators', 'Situation Report Indicator']
         for col in synonyms:
             if col in df_data.columns and col != "Indicator":
                 rename_dict[col] = "Indicator"
         if rename_dict:
             df_data.rename(columns=rename_dict, inplace=True)
+        
+        # st.text(df_data.columns)
 
         # --- Show Available Indicators ---
         unique_indicators = sorted(df_data["Indicator"].dropna().unique(), key=lambda x: str(x))
@@ -309,6 +317,7 @@ if "flow_data" in st.session_state:
                 default_index = group_options.index("Geographical area")
                 group_col = st.selectbox(f"Select Color Grouping Column (optional) for {flow}", group_options, index=default_index, key=f"group_{flow}")
                 st.info(f"For {flow}: Multiple unique geographical areas detected. Defaulting color grouping to 'Geographical area'.")
+            
             elif "Indicator" in available_columns:
                 if df_filtered_vis["Indicator"].nunique() > 1:
                     default_index = group_options.index("Indicator") if "Indicator" in group_options else 0
@@ -356,3 +365,4 @@ if "flow_data" in st.session_state:
 
             print(chart_title)
             print(df_filtered_vis["Indicator"].nunique())
+
